@@ -1,5 +1,7 @@
 'use server';
-
+type Profile = {
+  role: string;
+};
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -10,13 +12,20 @@ async function requireAdmin() {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect('/login');
 
+  const { data: profile, error } = await supabase
+  .from('profiles')
+  .select('role')
+  .eq('id', auth.user.id)
+  .single()
+  .returns<Profile>();
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', auth.user.id)
     .single();
 
-  if (!profile || profile.role !== 'admin') {
+  if (error || !profile || profile.role !== 'admin') {
     redirect('/');
   }
 
@@ -55,6 +64,30 @@ export async function createContentItem(formData: FormData) {
   revalidatePath('/');
   revalidatePath('/admin');
   redirect('/admin');
+}
+
+async function requireAdmin() {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+
+  if (!auth.user) redirect('/login');
+
+  type Profile = {
+    role: string;
+  };
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', auth.user.id)
+    .single()
+    .returns<Profile>();
+
+  if (error || !profile || profile.role !== 'admin') {
+    redirect('/');
+  }
+
+  return { supabase, user: auth.user };
 }
 
 export async function createQuickLink(formData: FormData) {
