@@ -1,8 +1,23 @@
 import { createClient } from '@/lib/supabase/server';
 
+type Contact = {
+  id: number;
+  name: string;
+  position: string;
+  office: string;
+  email: string;
+  phone: string;
+  sort_order: number;
+};
+
 export default async function DirectoryPage() {
   const supabase = await createClient();
-  const { data: contacts } = await supabase.from('directory_contacts').select('*').order('sort_order');
+
+  const { data: contacts } = await supabase
+    .from('directory_contacts')
+    .select('*')
+    .order('sort_order')
+    .returns<Contact[]>(); // ✅ FIX
 
   return (
     <section className="container section">
@@ -12,6 +27,7 @@ export default async function DirectoryPage() {
           <p>Office and personnel directory listing.</p>
         </div>
       </div>
+
       <div className="table-wrap card">
         <table>
           <thead>
@@ -23,6 +39,7 @@ export default async function DirectoryPage() {
               <th>Phone</th>
             </tr>
           </thead>
+
           <tbody>
             {(contacts ?? []).map((contact) => (
               <tr key={contact.id}>
@@ -36,7 +53,10 @@ export default async function DirectoryPage() {
           </tbody>
         </table>
       </div>
-      {!contacts?.length ? <p className="empty-state">No contacts yet.</p> : null}
+
+      {!contacts?.length ? (
+        <p className="empty-state">No contacts yet.</p>
+      ) : null}
     </section>
   );
 }
